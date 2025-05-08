@@ -125,17 +125,6 @@ knowledge_base.load(upsert=True)
 - "Give me a 7-day study plan to learn chart patterns."
 - "Summarize the ebook on commodities."
 
----
-
-## Acknowledgments
-
-- [Deriv.com](https://deriv.com) – Official source of all trading ebooks  
-- [Agno](https://github.com/victordibia/agno) – Modular agent framework  
-- [OpenAI](https://platform.openai.com/) – LLM APIs  
-- [LanceDB](https://lancedb.github.io/lancedb/) – Fast vector search  
-
----
-
 ## License
 
 This project is for educational and non-commercial use.  
