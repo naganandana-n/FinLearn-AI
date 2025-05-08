@@ -91,7 +91,7 @@ This architecture makes FinLearn-AI **highly extensible**, i.e you can easily pl
 
 ### 1. Clone the Repository, Setup Virtual Environment & Install Dependencies
 ```bash
-git clone https://github.com/your-username/FinLearn-AI.git
+git clone https://github.com/seeee3/FinLearn-AI.git
 cd FinLearn-AI
 python3 -m venv .venv
 source .venv/bin/activate
@@ -124,6 +124,13 @@ knowledge_base.load(upsert=True)
 - "Generate a 5-question quiz on cryptocurrency at medium difficulty."
 - "Give me a 7-day study plan to learn chart patterns."
 - "Summarize the ebook on commodities."
+
+## Acknowledgments
+
+- [Deriv.com](https://deriv.com/academy) – Official source of all trading ebooks  
+- [Agno](https://github.com/agno-agi/agno) – Modular agent framework  
+- [OpenAI](https://platform.openai.com/) – LLM APIs  
+- [LanceDB](https://github.com/lancedb/lancedb) – Fast vector search  
 
 ## License
 
