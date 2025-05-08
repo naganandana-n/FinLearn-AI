@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 load_dotenv()
 
+# Import agno framework components for building RAG agents
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 from agno.knowledge.pdf_url import PDFUrlKnowledgeBase
@@ -14,12 +15,16 @@ from agno.vectordb.lancedb import LanceDb, SearchType
 from agno.tools.duckduckgo import DuckDuckGoTools
 
 app = Flask(__name__)
+
+# Set secret key for session management (from environment variable or default)
 app.secret_key = os.environ.get("SECRET_KEY", "finance-rag-assistant-secret")
 
-# Use environment variable for LanceDB path or default to local tmp directory
+# Path for LanceDB storage; default is local folder if not set in .env
 db_uri = os.environ.get("LANCEDB_URI", "tmp/lancedb")
 
-# PDF URLs
+
+# --- KNOWLEDGE BASE SETUP ---
+# List of finance-related PDF URLs from Deriv.com to be used as knowledge source
 pdf_urls = [
     "https://static.deriv.com/marketing/ebook-forex-en-hq.pdf",
     "https://static.deriv.com/marketing/ebook-stocks-en-hq.pdf",
@@ -32,15 +37,18 @@ pdf_urls = [
 
 ]
 
-# Initialize the RAG agent
+# Initialize the vector-based knowledge base using the PDF URLs and LanceDB
 knowledge_base = PDFUrlKnowledgeBase(
     urls=pdf_urls,
     vector_db=LanceDb(table_name="finance_docs", uri=db_uri, search_type=SearchType.vector),
 )
 
 # Comment this out after first run to avoid reloading the knowledge base each time
-#knowledge_base.load(upsert=True)
+# knowledge_base.load(upsert=True)
 
+# --- AGENT INITIALIZATION ---
+
+# General-purpose agent for answering user queries using the RAG pipeline
 rag_agent = Agent(
     model=OpenAIChat(id="gpt-4o"),
     agent_id="rag-agent",
@@ -50,7 +58,7 @@ rag_agent = Agent(
     markdown=True,
 )
 
-# Initialize quiz agent
+# Dedicated agents for quizzes, summaries, and study plans (same model, different prompts)
 quiz_agent = Agent(
     model=OpenAIChat(id="gpt-4o"),
     agent_id="quiz-agent",
@@ -74,18 +82,24 @@ study_plan_agent = Agent(
     markdown=True,
 )
 
+# --- ROUTES ---
+
+# Render the frontend interface (index.html)
 @app.route('/')
 def home():
     return render_template('index.html')
 
+# --- API: Handle General Query ---
 @app.route('/api/query', methods=['POST'])
 def query():
     user_query = request.json.get('query', '')
     if not user_query:
         return jsonify({'error': 'Query is required'}), 400
 
+    # Run the query through the RAG agent
     response = rag_agent.run(user_query)
 
+    # Extract response text safely
     try:
         if hasattr(response, 'content'):
             response_text = response.content
@@ -99,12 +113,15 @@ def query():
 
     return jsonify({'response': response_text})
 
+
+# --- API: Generate Quiz from Topic ---
 @app.route('/api/generate_quiz', methods=['POST'])
 def generate_quiz():
     topic = request.json.get('topic', '')
     num_questions = request.json.get('numQuestions', 5)
     difficulty = request.json.get('difficulty', 'medium')
     
+    # Construct prompt for GPT-4o
     quiz_prompt = f"""
     Generate a quiz with {num_questions} questions about {topic} at {difficulty} difficulty level.
     Each question should have 4 options with one correct answer.
@@ -126,7 +143,7 @@ def generate_quiz():
     response = quiz_agent.run(quiz_prompt)
     
     try:
-        # Extract JSON from the response
+        # Extract text and parse JSON from model response
         if hasattr(response, 'content'):
             response_text = response.content
         elif hasattr(response, 'text'):
@@ -149,14 +166,17 @@ def generate_quiz():
         print("Response was:", response_text)
         return jsonify({'error': 'Failed to generate quiz', 'details': str(e)}), 500
 
+# --- API: Generate Study Plan ---
 @app.route('/api/create_study_plan', methods=['POST'])
 def create_study_plan():
     topics = request.json.get('topics', [])
     days = request.json.get('days', 7)
     hours_per_day = request.json.get('hoursPerDay', 2)
     
+    # Convert topic list to string for the prompt
     topics_str = ", ".join(topics) if topics else "all finance topics from the PDFs"
     
+    # Prompt GPT to generate a multi-day study plan
     study_prompt = f"""
     Create a detailed {days}-day study plan for learning about {topics_str}.
     The student can dedicate {hours_per_day} hours per day.
@@ -203,6 +223,8 @@ def create_study_plan():
         print("Response was:", response_text)
         return jsonify({'error': 'Failed to create study plan', 'details': str(e)}), 500
 
+
+# --- API: Summarize Selected PDF ---
 @app.route('/api/summarize_pdf', methods=['POST'])
 def summarize_pdf():
     pdf_index = request.json.get('pdfIndex', 0)
@@ -239,6 +261,7 @@ def summarize_pdf():
         print("Error extracting summary:", e)
         return jsonify({'error': 'Failed to summarize PDF', 'details': str(e)}), 500
 
+# --- API: Check Quiz Answer ---
 @app.route('/api/check_answer', methods=['POST'])
 def check_answer():
     question = request.json.get('question', '')
@@ -246,6 +269,7 @@ def check_answer():
     correct_answer = request.json.get('correctAnswer', '')
     explanation = request.json.get('explanation', '')
     
+    # Compare answers to determine if user is correct
     is_correct = user_answer.strip() == correct_answer.strip()
     
     return jsonify({
@@ -253,5 +277,7 @@ def check_answer():
         'explanation': explanation
     })
 
+# --- APP ENTRY POINT ---
 if __name__ == '__main__':
+    # Start Flask development server on port 8000
     app.run(debug=True, host='0.0.0.0', port=8000)
