@@ -42,6 +42,8 @@ FinLearn-AI is powered by the following official Deriv ebooks:
 - Synthetic Indices  
 - Top 10 Chart Patterns
 
+The PDFs are parsed and chunked automatically using Agno, with pypdf used internally for text extraction.
+
 ## Tech Stack
 
 | Component       | Technology         |
@@ -51,7 +53,7 @@ FinLearn-AI is powered by the following official Deriv ebooks:
 | Vector DB      | LanceDB            |
 | Knowledge Base | agno + pypdf       |
 | Search Fallback| DuckDuckGo Tools   |
-| Parsing & DB   | SQLAlchemy + pgvector |
+| Parsing        | pypdf (via Agno)     |
 
 ## How It Works: Agents and the RAG Pipeline
 
